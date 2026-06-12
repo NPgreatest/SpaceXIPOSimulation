@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPCX IPO Sandbox</title>
+  <style>
+    :root {
+      --bg: #0d1117; --bg-card: #161b22; --bg-input: #21262d; --border: #30363d;
+      --text: #e6edf3; --text-muted: #8b949e; --green: #3fb950; --red: #f85149;
+      --gray: #8b949e; --blue: #58a6ff; --yellow: #d29922; --orange: #db6d28;
+      --accent: #1f6feb; --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh; }
+    .disclaimer { background: #1c2128; border-bottom: 1px solid var(--border); padding: 10px 16px; font-size: 0.82rem; color: var(--yellow); text-align: center; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 16px; }
+    header { text-align: center; margin-bottom: 20px; position: relative; }
+    header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+    .lang-toggle { position: absolute; right: 0; top: 0; display: flex; gap: 4px; }
+    .lang-btn { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-muted); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; }
+    .lang-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .ticker-badge { display: inline-block; background: var(--accent); color: #fff; padding: 2px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; margin-right: 8px; }
+    .fixed-tag { font-size: 0.85rem; color: var(--text-muted); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } .lang-toggle { position: static; justify-content: center; margin-bottom: 10px; } }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 0.78rem; color: var(--text-muted); }
+    .fixed-field { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 0.9rem; color: var(--text-muted); }
+    input[type="number"] { background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px 10px; font-size: 0.9rem; width: 100%; }
+    input:focus { outline: none; border-color: var(--accent); }
+    .slider-row { margin-bottom: 14px; }
+    .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .slider-header label { font-size: 0.82rem; }
+    .slider-value { font-weight: 600; font-size: 0.9rem; color: var(--blue); }
+    input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+    .slider-input-row { display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+    .slider-input-row input[type="number"] { width: 100px; flex-shrink: 0; }
+    .section-note { font-size: 0.78rem; color: var(--text-muted); }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+    .checkbox-row label { font-size: 0.85rem; color: var(--text); cursor: pointer; }
+    .expected-card { background: linear-gradient(135deg, #1a2332, #161b22); border: 1px solid var(--accent); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+    .expected-card h2 { border-bottom-color: #1f6feb44; }
+    .expected-main { text-align: center; padding: 12px 0; }
+    .expected-main .label { font-size: 0.82rem; color: var(--text-muted); }
+    .expected-main .value { font-size: 2rem; font-weight: 800; margin: 4px 0; }
+    .expected-main .sub { font-size: 0.9rem; color: var(--text-muted); }
+    .prob-bars { margin-top: 12px; }
+    .prob-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.78rem; }
+    .prob-row .prob-label { width: 88px; flex-shrink: 0; color: var(--text-muted); }
+    .prob-row .prob-bar-wrap { flex: 1; height: 8px; background: var(--bg-input); border-radius: 4px; overflow: hidden; }
+    .prob-row .prob-bar { height: 100%; border-radius: 4px; }
+    .prob-row .prob-pct { width: 38px; text-align: right; font-family: monospace; font-size: 0.75rem; }
+    .prob-row .prob-pl { width: 72px; text-align: right; font-family: monospace; font-size: 0.75rem; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .metric-card { background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; }
+    .metric-card .label { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; }
+    .metric-card .value { font-size: 0.95rem; font-weight: 700; }
+    .positive { color: var(--green); } .negative { color: var(--red); } .neutral { color: var(--gray); }
+    .scenario-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    @media (max-width: 700px) { .scenario-grid { grid-template-columns: 1fr; } }
+    .scenario-card { background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .scenario-card.loss { border-top: 3px solid var(--red); }
+    .scenario-card.tp1  { border-top: 3px solid var(--orange); }
+    .scenario-card.tp2  { border-top: 3px solid var(--blue); }
+    .scenario-card.moon { border-top: 3px solid var(--green); }
+    .scenario-card h3 { font-size: 0.92rem; margin-bottom: 6px; }
+    .scenario-card .big-pl { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+    .info-box { background: #1f6feb12; border: 1px solid #1f6feb55; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+    .breakdown-table th { font-size: 0.68rem; color: var(--text-muted); padding: 4px; }
+    .breakdown-table td { font-size: 0.72rem; padding: 4px; }
+    .breakdown-table .cum-row { border-top: 1px solid var(--border); font-weight: 700; }
+    .breakdown-table .step-pl { font-family: monospace; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    th, td { padding: 5px 6px; text-align: left; border-bottom: 1px solid var(--border); }
+    td.value-cell { font-weight: 600; font-family: "SF Mono", monospace; }
+    #chartCanvas { width: 100%; height: 420px; display: block; border-radius: 8px; background: #1a1f26; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 0.75rem; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-line { width: 20px; height: 3px; border-radius: 2px; }
+    .warning { color: var(--yellow); font-size: 0.82rem; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="disclaimer" id="disclaimer"></div>
+  <div class="container">
+    <header>
+      <div class="lang-toggle">
+        <button class="lang-btn active" id="btnZh" type="button">中文</button>
+        <button class="lang-btn" id="btnEn" type="button">EN</button>
+      </div>
+      <h1 id="pageTitle"></h1>
+      <span class="ticker-badge">SPCX</span>
+      <span class="fixed-tag" id="fixedCostTag"></span>
+    </header>
+
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <h2 id="hBasic"></h2>
+          <div class="form-row">
+            <div class="form-group"><label id="lblTickerFixed"></label><div class="fixed-field">SPCX</div></div>
+            <div class="form-group"><label id="lblCostFixed"></label><div class="fixed-field">$135.00</div></div>
+            <div class="form-group"><label for="existingShares" id="lblExistingShares"></label><input type="number" id="existingShares" value="19" min="0" step="1"></div>
+            <div class="form-group"><label for="addShares" id="lblAddShares"></label><input type="number" id="addShares" value="50" min="0" step="1"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2 id="hSliders"></h2>
+          <div class="slider-row">
+            <div class="slider-header"><label id="lblFill"></label><span class="slider-value" id="fillPriceDisplay">$200</span></div>
+            <input type="range" id="fillPriceSlider" min="135" max="405" step="0.5" value="200">
+            <div class="slider-input-row"><input type="number" id="fillPrice" value="200" step="0.01"><span class="section-note" id="noteFill"></span></div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-header"><label id="lblStop"></label><span class="slider-value" id="stopPriceDisplay">$180</span></div>
+            <input type="range" id="stopPriceSlider" min="100" max="198" step="0.5" value="180">
+            <div class="slider-input-row"><input type="number" id="stopPrice" value="180" step="0.01"><span class="section-note" id="stopPctHint"></span></div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-header"><label id="lblHigh"></label><span class="slider-value" id="highDisplay">$500</span></div>
+            <input type="range" id="highSlider" min="260" max="600" step="0.5" value="500">
+            <div class="slider-input-row"><input type="number" id="highPrice" value="500" step="0.01"><span class="section-note" id="noteHigh"></span></div>
+            <p class="warning" id="highWarning" style="display:none"></p>
+          </div>
+        </div>
+        <div class="card">
+          <h2 id="hExpectedSlider"></h2>
+          <div class="slider-row">
+            <div class="slider-header"><label id="lblOptimism"></label><span class="slider-value" id="optimismDisplay">50%</span></div>
+            <input type="range" id="optimismSlider" min="0" max="100" step="1" value="50">
+          </div>
+        </div>
+        <div class="card">
+          <h2 id="hTakeProfit"></h2>
+          <div class="form-row">
+            <div class="form-group"><label for="profitTriggerPct" id="lblTp1Trigger"></label><input type="number" id="profitTriggerPct" value="15" min="0" step="0.1"></div>
+            <div class="form-group"><label for="firstSellPct" id="lblTp1Sell"></label><input type="number" id="firstSellPct" value="50" min="0" max="100" step="1"></div>
+            <div class="form-group"><label for="secondProfitTriggerPct" id="lblTp2Trigger"></label><input type="number" id="secondProfitTriggerPct" value="30" min="0" step="0.1"></div>
+            <div class="form-group"><label for="secondSellPct" id="lblTp2Sell"></label><input type="number" id="secondSellPct" value="50" min="0" max="100" step="1"></div>
+            <div class="form-group"><label for="trailingStopPct" id="lblTrailing"></label><input type="number" id="trailingStopPct" value="10" min="0" max="100" step="0.1"></div>
+            <div class="form-group"><label for="strongTrendPct" id="lblStrong"></label><input type="number" id="strongTrendPct" value="50" min="0" step="0.1"></div>
+            <div class="form-group"><label for="tightTrailingPct" id="lblTight"></label><input type="number" id="tightTrailingPct" value="5" min="0" max="100" step="0.1"></div>
+          </div>
+          <div class="checkbox-row"><input type="checkbox" id="ipoFollow" checked><label for="ipoFollow" id="lblIpoFollow"></label></div>
+        </div>
+      </div>
+      <div>
+        <div class="expected-card">
+          <h2 id="hExpected"></h2>
+          <div class="expected-main">
+            <div class="label" id="lblExpectedPL"></div>
+            <div class="value" id="expectedPL">—</div>
+            <div class="sub"><span id="lblExpectedReturn"></span> <span id="expectedReturn">—</span></div>
+          </div>
+          <div class="prob-bars" id="probBars"></div>
+        </div>
+        <div class="card">
+          <h2 id="hKeyPrices"></h2>
+          <div class="metrics-grid" id="metricsGrid"></div>
+        </div>
+        <div class="card">
+          <h2 id="hScenarios"></h2>
+          <div class="info-box" id="calcNote"></div>
+          <div class="scenario-grid" id="scenarioGrid"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 id="hChart"></h2>
+      <canvas id="chartCanvas"></canvas>
+      <div class="legend" id="chartLegend"></div>
+    </div>
+  </div>
+
+  <script>
+    const EXISTING_COST = 135;
+    const SCENARIO_COLORS = { loss: '#f85149', tp1: '#db6d28', tp2: '#58a6ff', moon: '#3fb950' };
+    const $ = (id) => document.getElementById(id);
+
+    let lang = localStorage.getItem('lang') || 'zh';
+
+    const I18N = {
+      zh: {
+        pageTitle: 'IPO 首日短线交易沙盘',
+        disclaimer: '⚠️ 本地沙盘模拟，不构成投资建议，不自动交易。',
+        fixedCost: 'IPO 成本 C₀ = $135（固定）',
+        hBasic: '基础参数', lblTickerFixed: 'Ticker（固定）', lblCostFixed: 'C₀（固定）',
+        lblExistingShares: '已有 IPO 股数 N₀', lblAddShares: '追加买入股数 N₁',
+        hSliders: '价格滑块', lblFill: '成交价 E', noteFill: 'C₀ → C₀×3',
+        lblStop: '止损价', lblHigh: '放飞最高价 H', noteHigh: 'TP2 → E×3',
+        highWarning: 'H 低于 TP2，放飞路径无效',
+        hExpectedSlider: '期望收益', lblOptimism: '乐观度（0 悲观 → 100 乐观）',
+        hTakeProfit: '止盈参数',
+        lblTp1Trigger: '第一止盈 %', lblTp1Sell: '第一止盈卖出 %',
+        lblTp2Trigger: '第二止盈 %', lblTp2Sell: '第二止盈卖出 %（剩余）',
+        lblTrailing: 'Trailing %', lblStrong: '强趋势 %', lblTight: 'Tight Trailing %',
+        lblIpoFollow: 'IPO 股份跟随追加仓同价退出',
+        hExpected: '期望收益 E[P/L]', lblExpectedPL: '加权期望总 P/L',
+        lblExpectedReturn: '期望收益率', hKeyPrices: '关键价格线', hScenarios: '情景对比',
+        calcNote: '四种情景相互独立、不累加。情景内为分批卖出累计计入总 P/L（TP2 含 TP1，放飞含 TP1+TP2+Trailing）。',
+        hChart: '价格路径图',
+        shares: '股', totalCost: '总成本',
+        fill: '成交价 E', stop: '止损', tp1: 'TP1', tp2: 'TP2', strong: '强趋势',
+        trailExit: 'Trailing Exit', tp1Sell: 'TP1 卖出', tp2Sell: 'TP2 卖出', trailRemain: 'Trailing 剩余',
+        scLoss: '亏损退出', scTp1: '第一止盈', scTp2: '第二止盈', scMoon: '放飞 · Trailing',
+        colStep: '步骤', colAction: '操作', colShares: '股数', colPrice: '价格',
+        colStepAdd: '本步追加仓', colStepIpo: '本步 IPO', colCum: '累计',
+        actStop: '止损', actTp1: 'TP1', actTp2: 'TP2', actBreakeven: '保本 @ E', actTrail: 'Trailing',
+        cumTotal: '累计总 P/L', addPL: '追加仓 P/L', ipoPL: 'IPO P/L', totalReturn: '总收益率',
+        stopBelow: '≈ {pct}% below E',
+        stages: ['成交 E', 'TP1', 'TP2', '高点 H', '退出'],
+        refStop: '止损', refBreakeven: 'E', refStrong: '强趋势', refTrail: 'Trail',
+        chartExpected: '期望路径（加权）', chartExpectedLine: '--- 期望路径',
+      },
+      en: {
+        pageTitle: 'IPO Day-1 Trading Sandbox',
+        disclaimer: '⚠️ Local sandbox only. Not investment advice. No auto-trading.',
+        fixedCost: 'IPO cost C₀ = $135 (fixed)',
+        hBasic: 'Basics', lblTickerFixed: 'Ticker (fixed)', lblCostFixed: 'C₀ (fixed)',
+        lblExistingShares: 'Existing IPO shares N₀', lblAddShares: 'Add-on shares N₁',
+        hSliders: 'Price sliders', lblFill: 'Fill price E', noteFill: 'C₀ → C₀×3',
+        lblStop: 'Stop price', lblHigh: 'Moon high H', noteHigh: 'TP2 → E×3',
+        highWarning: 'H below TP2 — moon path invalid',
+        hExpectedSlider: 'Expected return', lblOptimism: 'Optimism (0 bear → 100 bull)',
+        hTakeProfit: 'Take-profit params',
+        lblTp1Trigger: 'TP1 trigger %', lblTp1Sell: 'TP1 sell %',
+        lblTp2Trigger: 'TP2 trigger %', lblTp2Sell: 'TP2 sell % (of remainder)',
+        lblTrailing: 'Trailing %', lblStrong: 'Strong trend %', lblTight: 'Tight trailing %',
+        lblIpoFollow: 'IPO shares exit at same price as add-on',
+        hExpected: 'Expected E[P/L]', lblExpectedPL: 'Weighted expected P/L',
+        lblExpectedReturn: 'Expected return', hKeyPrices: 'Key levels', hScenarios: 'Scenarios',
+        calcNote: 'Four scenarios are mutually exclusive. P/L within each path is cumulative (TP2 includes TP1; Moon includes TP1+TP2+Trailing).',
+        hChart: 'Price paths',
+        shares: 'sh', totalCost: 'Total cost',
+        fill: 'Fill E', stop: 'Stop', tp1: 'TP1', tp2: 'TP2', strong: 'Strong',
+        trailExit: 'Trail exit', tp1Sell: 'TP1 sell', tp2Sell: 'TP2 sell', trailRemain: 'Trail remainder',
+        scLoss: 'Stop loss', scTp1: 'TP1 only', scTp2: 'TP2', scMoon: 'Moon · Trailing',
+        colStep: 'Step', colAction: 'Action', colShares: 'Shares', colPrice: 'Price',
+        colStepAdd: 'Add-on step', colStepIpo: 'IPO step', colCum: 'Cumulative',
+        actStop: 'Stop', actTp1: 'TP1', actTp2: 'TP2', actBreakeven: 'Breakeven @ E', actTrail: 'Trailing',
+        cumTotal: 'Total P/L', addPL: 'Add-on P/L', ipoPL: 'IPO P/L', totalReturn: 'Total return',
+        stopBelow: '≈ {pct}% below E',
+        stages: ['Fill E', 'TP1', 'TP2', 'High H', 'Exit'],
+        refStop: 'Stop', refBreakeven: 'E', refStrong: 'Strong', refTrail: 'Trail',
+        chartExpected: 'Expected (weighted)', chartExpectedLine: '--- Expected path',
+      },
+    };
+
+    const SC_TITLES = { loss: 'scLoss', tp1: 'scTp1', tp2: 'scTp2', moon: 'scMoon' };
+    const ACT_KEYS = { actStop: 'actStop', actTp1: 'actTp1', actTp2: 'actTp2', actBreakeven: 'actBreakeven', actTrail: 'actTrail' };
+
+    function t(key, vars = {}) {
+      let s = (I18N[lang][key] ?? I18N.en[key] ?? key);
+      Object.entries(vars).forEach(([k, v]) => { s = s.replace(`{${k}}`, v); });
+      return s;
+    }
+
+    function scTitle(id) { return t(SC_TITLES[id]); }
+
+    function applyStaticI18n() {
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      document.title = 'SPCX IPO Sandbox';
+      $('disclaimer').textContent = t('disclaimer');
+      $('pageTitle').textContent = t('pageTitle');
+      $('fixedCostTag').textContent = t('fixedCost');
+      ['hBasic','hSliders','hExpectedSlider','hTakeProfit','hExpected','hKeyPrices','hScenarios','hChart'].forEach(id => {
+        const el = $(id); if (el) el.textContent = t(id.replace('h','').replace('ExpectedSlider','ExpectedSlider').replace('Basic','Basic'));
+      });
+      $('hBasic').textContent = t('hBasic');
+      $('hSliders').textContent = t('hSliders');
+      $('hExpectedSlider').textContent = t('hExpectedSlider');
+      $('hTakeProfit').textContent = t('hTakeProfit');
+      $('hExpected').textContent = t('hExpected');
+      $('hKeyPrices').textContent = t('hKeyPrices');
+      $('hScenarios').textContent = t('hScenarios');
+      $('hChart').textContent = t('hChart');
+      $('lblTickerFixed').textContent = t('lblTickerFixed');
+      $('lblCostFixed').textContent = t('lblCostFixed');
+      $('lblExistingShares').textContent = t('lblExistingShares');
+      $('lblAddShares').textContent = t('lblAddShares');
+      $('lblFill').textContent = t('lblFill');
+      $('lblStop').textContent = t('lblStop');
+      $('lblHigh').textContent = t('lblHigh');
+      $('noteFill').textContent = t('noteFill');
+      $('noteHigh').textContent = t('noteHigh');
+      $('lblOptimism').textContent = t('lblOptimism');
+      $('lblTp1Trigger').textContent = t('lblTp1Trigger');
+      $('lblTp1Sell').textContent = t('lblTp1Sell');
+      $('lblTp2Trigger').textContent = t('lblTp2Trigger');
+      $('lblTp2Sell').textContent = t('lblTp2Sell');
+      $('lblTrailing').textContent = t('lblTrailing');
+      $('lblStrong').textContent = t('lblStrong');
+      $('lblTight').textContent = t('lblTight');
+      $('lblIpoFollow').textContent = t('lblIpoFollow');
+      $('lblExpectedPL').textContent = t('lblExpectedPL');
+      $('lblExpectedReturn').textContent = t('lblExpectedReturn');
+      $('calcNote').textContent = t('calcNote');
+      $('btnZh').classList.toggle('active', lang === 'zh');
+      $('btnEn').classList.toggle('active', lang === 'en');
+    }
+
+    function setLang(l) {
+      lang = l;
+      localStorage.setItem('lang', l);
+      applyStaticI18n();
+      recalculate();
+    }
+
+    function clampNum(val, min, max, fallback) {
+      const n = parseFloat(val);
+      if (isNaN(n)) return fallback;
+      return Math.min(max, Math.max(min, n));
+    }
+
+    function readInputs() {
+      const existingShares = clampNum($('existingShares').value, 0, Infinity, 19);
+      const addShares = clampNum($('addShares').value, 0, Infinity, 50);
+      const fillMin = EXISTING_COST, fillMax = EXISTING_COST * 3;
+      const fillPrice = clampNum($('fillPrice').value, fillMin, fillMax, 200);
+      const stopMin = fillPrice * 0.5, stopMax = fillPrice - 0.01;
+      const stopPrice = clampNum($('stopPrice').value, stopMin, stopMax, fillPrice * 0.9);
+      const profitTriggerPct = clampNum($('profitTriggerPct').value, 0, Infinity, 15) / 100;
+      const firstSellPct = clampNum($('firstSellPct').value, 0, 100, 50) / 100;
+      const secondProfitTriggerPct = clampNum($('secondProfitTriggerPct').value, 0, Infinity, 30) / 100;
+      const secondSellPct = clampNum($('secondSellPct').value, 0, 100, 50) / 100;
+      const trailingStopPct = clampNum($('trailingStopPct').value, 0, 100, 10) / 100;
+      const strongTrendPct = clampNum($('strongTrendPct').value, 0, Infinity, 50) / 100;
+      const tightTrailingPct = clampNum($('tightTrailingPct').value, 0, 100, 5) / 100;
+      const ipoFollow = $('ipoFollow').checked;
+      const optimism = clampNum($('optimismSlider').value, 0, 100, 50);
+      const triggerPrice1 = fillPrice * (1 + profitTriggerPct);
+      const triggerPrice2 = fillPrice * (1 + secondProfitTriggerPct);
+      const strongTrendPrice = fillPrice * (1 + strongTrendPct);
+      const highMin = triggerPrice2, highMax = fillPrice * 3;
+      const highPrice = clampNum($('highPrice').value, highMin, highMax, highMax);
+      return {
+        existingShares, existingCost: EXISTING_COST, addShares,
+        fillPrice, stopPrice, highPrice, optimism,
+        fillMin, fillMax, highMin, highMax,
+        profitTriggerPct, firstSellPct, secondProfitTriggerPct, secondSellPct,
+        trailingStopPct, strongTrendPct, tightTrailingPct, ipoFollow,
+        triggerPrice1, triggerPrice2, strongTrendPrice,
+        impliedStopPct: (fillPrice - stopPrice) / fillPrice,
+      };
+    }
+
+    function distributeProbabilities(optimism) {
+      const t = optimism / 100;
+      const raw = {
+        loss: (1 - t) * 0.55 + t * 0.05, tp1: (1 - t) * 0.25 + t * 0.15,
+        tp2: (1 - t) * 0.15 + t * 0.25, moon: (1 - t) * 0.05 + t * 0.55,
+      };
+      const sum = raw.loss + raw.tp1 + raw.tp2 + raw.moon;
+      return { loss: raw.loss / sum, tp1: raw.tp1 / sum, tp2: raw.tp2 / sum, moon: raw.moon / sum };
+    }
+
+    function calcPL(p, sells, remainingShares, remainingPrice, ipoExitPrice) {
+      const addCost = p.addShares * p.fillPrice;
+      let addProceeds = 0;
+      sells.forEach(s => { addProceeds += s.shares * s.price; });
+      addProceeds += remainingShares * remainingPrice;
+      const addPL = addProceeds - addCost;
+      const ipoPL = p.existingShares * (ipoExitPrice - EXISTING_COST);
+      const totalCost = p.existingShares * EXISTING_COST + addCost;
+      const totalPL = ipoPL + addPL;
+      const totalReturnPct = totalCost > 0 ? (totalPL / totalCost) * 100 : 0;
+      const addReturnPct = addCost > 0 ? (addPL / addCost) * 100 : 0;
+      return { addCost, addPL, addReturnPct, ipoPL, totalCost, totalPL, totalReturnPct };
+    }
+
+    function splitShares(p) {
+      const N1 = Math.floor(p.addShares);
+      const firstShares = Math.floor(N1 * p.firstSellPct);
+      const afterFirst = N1 - firstShares;
+      const secondShares = Math.floor(afterFirst * p.secondSellPct);
+      return { firstShares, secondShares, afterFirst, afterSecond: afterFirst - secondShares };
+    }
+
+    function buildBreakdown(p, sc) {
+      const E = p.fillPrice, N0 = p.existingShares, N1 = Math.floor(p.addShares);
+      const { firstShares, secondShares, afterFirst, afterSecond } = splitShares(p);
+      const steps = [];
+      let cumAdd = 0, cumIpo = 0;
+
+      function push(step, actionKey, shares, price, includeIpo) {
+        const addPL = shares > 0 ? shares * (price - E) : 0;
+        cumAdd += addPL;
+        let ipoPL = null;
+        if (includeIpo && p.ipoFollow) {
+          ipoPL = N0 * (price - EXISTING_COST);
+          cumIpo = ipoPL;
+        }
+        steps.push({
+          step, action: t(actionKey), shares, price, stepAddPL: addPL, stepIpoPL: ipoPL,
+          cumTotalPL: cumAdd + (p.ipoFollow ? cumIpo : 0),
+        });
+      }
+
+      if (sc.id === 'loss') { push('①', 'actStop', N1, p.stopPrice, true); return steps; }
+      if (sc.id === 'tp1') {
+        push('①', 'actTp1', firstShares, p.triggerPrice1, false);
+        push('②', 'actBreakeven', afterFirst, E, true);
+        return steps;
+      }
+      if (sc.id === 'tp2') {
+        push('①', 'actTp1', firstShares, p.triggerPrice1, false);
+        push('②', 'actTp2', secondShares, p.triggerPrice2, false);
+        push('③', 'actBreakeven', afterSecond, E, true);
+        return steps;
+      }
+      if (!sc.valid) return [];
+      push('①', 'actTp1', firstShares, p.triggerPrice1, false);
+      push('②', 'actTp2', secondShares, p.triggerPrice2, false);
+      push('③', 'actTrail', afterSecond, sc.trailingExitPrice, true);
+      return steps;
+    }
+
+    function buildChartPoints(p, sc) {
+      const E = p.fillPrice, mid = (E + p.stopPrice) / 2;
+      if (sc.id === 'loss') return [E, mid, E * 0.97, p.stopPrice * 1.02, p.stopPrice];
+      if (sc.id === 'tp1') return [E, p.triggerPrice1, p.triggerPrice1 * 0.98, E, E];
+      if (sc.id === 'tp2') return [E, p.triggerPrice1, p.triggerPrice2, p.triggerPrice2 * 0.99, E];
+      if (!sc.valid) return [E, E, E, E, E];
+      return [E, p.triggerPrice1, p.triggerPrice2, p.highPrice, sc.trailingExitPrice];
+    }
+
+    function makeScenario(p, base) {
+      const sc = { color: SCENARIO_COLORS[base.id], entryPrice: p.fillPrice, ...base };
+      sc.title = scTitle(base.id);
+      sc.breakdown = buildBreakdown(p, sc);
+      return sc;
+    }
+
+    function computeLoss(p) {
+      const pl = calcPL(p, [], p.addShares, p.stopPrice, p.stopPrice);
+      return makeScenario(p, { id: 'loss', css: 'loss', valid: true, chartPoints: buildChartPoints(p, { id: 'loss' }), ...pl });
+    }
+    function computeTP1(p) {
+      const { firstShares, afterFirst } = splitShares(p);
+      const pl = calcPL(p, [{ shares: firstShares, price: p.triggerPrice1 }], afterFirst, p.fillPrice, p.fillPrice);
+      return makeScenario(p, { id: 'tp1', css: 'tp1', valid: true, chartPoints: buildChartPoints(p, { id: 'tp1' }), ...pl });
+    }
+    function computeTP2(p) {
+      const { firstShares, secondShares, afterSecond } = splitShares(p);
+      const sells = [{ shares: firstShares, price: p.triggerPrice1 }, { shares: secondShares, price: p.triggerPrice2 }];
+      const pl = calcPL(p, sells, afterSecond, p.fillPrice, p.fillPrice);
+      return makeScenario(p, { id: 'tp2', css: 'tp2', valid: true, chartPoints: buildChartPoints(p, { id: 'tp2' }), ...pl });
+    }
+    function computeMoon(p) {
+      const H = p.highPrice;
+      const { firstShares, secondShares, afterSecond } = splitShares(p);
+      const valid = H >= p.triggerPrice2;
+      const trailingPct = H >= p.strongTrendPrice ? p.tightTrailingPct : p.trailingStopPct;
+      const trailingExitPrice = Math.max(p.fillPrice, H * (1 - trailingPct));
+      const sells = [{ shares: firstShares, price: p.triggerPrice1 }, { shares: secondShares, price: p.triggerPrice2 }];
+      const pl = valid ? calcPL(p, sells, afterSecond, trailingExitPrice, trailingExitPrice)
+        : { addCost: 0, addPL: 0, addReturnPct: 0, ipoPL: 0, totalCost: 0, totalPL: 0, totalReturnPct: 0 };
+      return makeScenario(p, {
+        id: 'moon', css: 'moon', valid, trailingExitPrice,
+        chartPoints: buildChartPoints(p, { id: 'moon', valid, trailingExitPrice }), ...pl,
+      });
+    }
+
+    function fmt(n, d = 2) { return (n == null || isNaN(n)) ? '—' : n.toFixed(d); }
+    function fmtPct(n) { return (n == null || isNaN(n)) ? '—' : ((n >= 0 ? '+' : '') + n.toFixed(2) + '%'); }
+    function fmtDollar(n) { return (n == null || isNaN(n)) ? '—' : ((n >= 0 ? '' : '-') + '$' + fmt(Math.abs(n))); }
+    function plClass(n) { return n > 0 ? 'positive' : n < 0 ? 'negative' : 'neutral'; }
+
+    function renderExpected(scenarios, probs, expected) {
+      $('expectedPL').textContent = fmtDollar(expected.expectedPL);
+      $('expectedPL').className = 'value ' + plClass(expected.expectedPL);
+      $('expectedReturn').textContent = fmtPct(expected.expectedReturn);
+      $('expectedReturn').className = plClass(expected.expectedReturn);
+      $('optimismDisplay').textContent = $('optimismSlider').value + '%';
+      $('probBars').innerHTML = scenarios.map(sc => {
+        const w = probs[sc.id], pct = (w * 100).toFixed(1);
+        return `<div class="prob-row"><span class="prob-label">${sc.title}</span>
+          <div class="prob-bar-wrap"><div class="prob-bar" style="width:${pct}%;background:${sc.color}"></div></div>
+          <span class="prob-pct">${pct}%</span><span class="prob-pl ${plClass(sc.totalPL)}">${fmtDollar(sc.totalPL)}</span></div>`;
+      }).join('');
+    }
+
+    function renderMetrics(p, moon) {
+      const { firstShares, secondShares, afterSecond } = splitShares(p);
+      const sh = t('shares');
+      const items = [
+        [t('fill'), fmtDollar(p.fillPrice), 'neutral'], [t('stop'), fmtDollar(p.stopPrice), 'negative'],
+        [t('tp1'), fmtDollar(p.triggerPrice1), 'positive'], [t('tp2'), fmtDollar(p.triggerPrice2), 'positive'],
+        [t('strong'), fmtDollar(p.strongTrendPrice), 'positive'],
+        [t('trailExit'), moon.valid ? fmtDollar(moon.trailingExitPrice) : '—', 'positive'],
+        [t('tp1Sell'), firstShares + ' ' + sh, 'neutral'], [t('tp2Sell'), secondShares + ' ' + sh, 'neutral'],
+        [t('trailRemain'), afterSecond + ' ' + sh, 'neutral'],
+        [t('totalCost'), fmtDollar(p.existingShares * EXISTING_COST + p.addShares * p.fillPrice), 'neutral'],
+      ];
+      $('metricsGrid').innerHTML = items.map(([l, v, c]) =>
+        `<div class="metric-card"><div class="label">${l}</div><div class="value ${c}">${v}</div></div>`).join('');
+    }
+
+    function renderScenarioCard(sc) {
+      const hasIpo = sc.breakdown.some(s => s.stepIpoPL != null);
+      const rows = sc.breakdown.map(s => `
+        <tr>
+          <td>${s.step}</td><td>${s.action}</td><td>${s.shares}</td><td>${fmtDollar(s.price)}</td>
+          <td class="step-pl ${plClass(s.stepAddPL)}">${fmtDollar(s.stepAddPL)}</td>
+          ${hasIpo ? `<td class="step-pl ${s.stepIpoPL != null ? plClass(s.stepIpoPL) : ''}">${s.stepIpoPL != null ? fmtDollar(s.stepIpoPL) : '—'}</td>` : ''}
+          <td class="step-pl ${plClass(s.cumTotalPL)}">${fmtDollar(s.cumTotalPL)}</td>
+        </tr>`).join('');
+      return `<div class="scenario-card ${sc.css}">
+        <h3>${sc.title}</h3>
+        <div class="big-pl ${plClass(sc.totalPL)}">${fmtDollar(sc.totalPL)}</div>
+        <div class="table-wrap"><table class="breakdown-table"><thead><tr>
+          <th>${t('colStep')}</th><th>${t('colAction')}</th><th>${t('colShares')}</th><th>${t('colPrice')}</th>
+          <th>${t('colStepAdd')}</th>${hasIpo ? `<th>${t('colStepIpo')}</th>` : ''}<th>${t('colCum')}</th>
+        </tr></thead><tbody>${rows}
+          <tr class="cum-row"><td colspan="${hasIpo ? 6 : 5}">${t('cumTotal')}</td>
+          <td class="value-cell ${plClass(sc.totalPL)}">${fmtDollar(sc.totalPL)}</td></tr>
+        </tbody></table></div>
+      </div>`;
+    }
+
+    function drawChart(p, scenarios, probs) {
+      const STAGES = t('stages');
+      const canvas = $('chartCanvas');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      const W = rect.width, Hc = rect.height;
+      ctx.fillStyle = '#1a1f26'; ctx.fillRect(0, 0, W, Hc);
+
+      const allPts = scenarios.flatMap(sc => sc.chartPoints || []);
+      const refs = [p.stopPrice, p.fillPrice, p.triggerPrice1, p.triggerPrice2, p.strongTrendPrice];
+      if (scenarios[3].valid) refs.push(p.highPrice, scenarios[3].trailingExitPrice);
+      const minP = Math.min(...allPts, ...refs) * 0.96, maxP = Math.max(...allPts, ...refs) * 1.03;
+      const range = maxP - minP || 1;
+      const padL = 68, padR = 100, padT = 36, padB = 52;
+      const chartW = W - padL - padR, chartH = Hc - padT - padB;
+      const toY = (pr) => padT + chartH - ((pr - minP) / range) * chartH;
+      const toX = (i) => padL + (i / (STAGES.length - 1)) * chartW;
+
+      [[minP, p.stopPrice, 'rgba(248,81,73,0.08)'], [p.stopPrice, p.fillPrice, 'rgba(248,81,73,0.04)'],
+       [p.fillPrice, p.triggerPrice1, 'rgba(63,185,80,0.04)'], [p.triggerPrice1, maxP, 'rgba(63,185,80,0.08)']
+      ].forEach(([a, b, c]) => { ctx.fillStyle = c; ctx.fillRect(padL, toY(b), chartW, toY(a) - toY(b)); });
+
+      ctx.strokeStyle = '#30363d';
+      for (let i = 0; i <= 6; i++) {
+        const y = padT + (chartH / 6) * i;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+        ctx.fillStyle = '#6e7681'; ctx.font = '11px monospace'; ctx.textAlign = 'right';
+        ctx.fillText('$' + fmt(maxP - (range / 6) * i, 0), padL - 8, y + 4);
+      }
+
+      const refLines = [
+        [p.stopPrice, '#f85149', t('refStop')], [p.fillPrice, '#8b949e', t('refBreakeven')],
+        [p.triggerPrice1, '#db6d28', 'TP1'], [p.triggerPrice2, '#58a6ff', 'TP2'],
+        [p.strongTrendPrice, '#a371f7', t('refStrong')],
+      ];
+      if (scenarios[3].valid) refLines.push([p.highPrice, '#d29922', 'H'], [scenarios[3].trailingExitPrice, '#3fb950', t('refTrail')]);
+      refLines.forEach(([pr, col, lbl]) => {
+        const y = toY(pr);
+        ctx.strokeStyle = col + '99'; ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke(); ctx.setLineDash([]);
+        const txt = lbl + ' $' + fmt(pr, 0);
+        ctx.font = '10px sans-serif';
+        const tw = ctx.measureText(txt).width + 10;
+        ctx.fillStyle = col + '33'; ctx.fillRect(W - padR + 4, y - 9, tw, 18);
+        ctx.fillStyle = col; ctx.textAlign = 'left'; ctx.fillText(txt, W - padR + 9, y + 4);
+      });
+
+      ctx.fillStyle = '#8b949e'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+      STAGES.forEach((lbl, i) => ctx.fillText(lbl, toX(i), Hc - padB + 28));
+
+      scenarios.forEach(sc => {
+        if (!sc.chartPoints) return;
+        const pts = sc.chartPoints, w = probs[sc.id];
+        ctx.strokeStyle = sc.color; ctx.lineWidth = 1.5 + w * 6;
+        ctx.globalAlpha = 0.35 + w * 0.65; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(toX(0), toY(pts[0]));
+        for (let i = 1; i < pts.length; i++) {
+          ctx.quadraticCurveTo((toX(i - 1) + toX(i)) / 2, toY(pts[i - 1]), toX(i), toY(pts[i]));
+        }
+        ctx.stroke(); ctx.globalAlpha = 1;
+        pts.forEach((pr, i) => {
+          const x = toX(i), y = toY(pr);
+          ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = sc.color; ctx.fill();
+        });
+      });
+
+      const expPts = STAGES.map((_, i) => scenarios.reduce((s, sc) => s + probs[sc.id] * (sc.chartPoints?.[i] || 0), 0));
+      ctx.setLineDash([8, 5]); ctx.strokeStyle = '#e6edf3'; ctx.lineWidth = 2; ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.moveTo(toX(0), toY(expPts[0]));
+      for (let i = 1; i < expPts.length; i++) ctx.quadraticCurveTo((toX(i-1)+toX(i))/2, toY(expPts[i-1]), toX(i), toY(expPts[i]));
+      ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#e6edf3'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText(t('chartExpectedLine'), padL, padT - 10);
+
+      $('chartLegend').innerHTML = [
+        ...scenarios.map(sc => ({ c: sc.color, l: `${sc.title} (${(probs[sc.id]*100).toFixed(0)}%)` })),
+        { c: '#e6edf3', l: t('chartExpected'), dash: true },
+      ].map(x => `<div class="legend-item"><div class="legend-line" style="background:${x.c}${x.dash ? ';opacity:.7' : ''}"></div>${x.l}</div>`).join('');
+    }
+
+    function syncSliders(p) {
+      ['fillPriceSlider','fillPrice'].forEach(id => { $(id).min = p.fillMin; $(id).max = p.fillMax; });
+      const sm = p.fillPrice * 0.5, sx = p.fillPrice - 0.01;
+      ['stopPriceSlider','stopPrice'].forEach(id => { $(id).min = sm; $(id).max = sx; });
+      ['highSlider','highPrice'].forEach(id => { $(id).min = p.highMin; $(id).max = p.highMax; });
+    }
+
+    function updateDisplays(p, moon) {
+      $('fillPriceDisplay').textContent = fmtDollar(p.fillPrice);
+      $('stopPriceDisplay').textContent = fmtDollar(p.stopPrice);
+      $('highDisplay').textContent = fmtDollar(p.highPrice);
+      $('stopPctHint').textContent = t('stopBelow', { pct: fmt(p.impliedStopPct * 100, 1) });
+      $('highWarning').style.display = moon.valid ? 'none' : 'block';
+      $('highWarning').textContent = t('highWarning');
+    }
+
+    function recalculate() {
+      let p = readInputs(); syncSliders(p); p = readInputs();
+      const scenarios = [computeLoss(p), computeTP1(p), computeTP2(p), computeMoon(p)];
+      const probs = distributeProbabilities(p.optimism);
+      let expectedPL = 0, expectedReturn = 0;
+      scenarios.forEach(sc => { expectedPL += probs[sc.id] * sc.totalPL; expectedReturn += probs[sc.id] * sc.totalReturnPct; });
+      updateDisplays(p, scenarios[3]);
+      renderExpected(scenarios, probs, { expectedPL, expectedReturn });
+      renderMetrics(p, scenarios[3]);
+      $('scenarioGrid').innerHTML = scenarios.map(renderScenarioCard).join('');
+      drawChart(p, scenarios, probs);
+    }
+
+    function bindEvents() {
+      $('btnZh').addEventListener('click', () => setLang('zh'));
+      $('btnEn').addEventListener('click', () => setLang('en'));
+      document.querySelectorAll('input').forEach(el => {
+        el.addEventListener('input', () => {
+          [['fillPriceSlider','fillPrice'],['stopPriceSlider','stopPrice'],['highSlider','highPrice']].forEach(([s,n]) => {
+            if (el.id === s) $(n).value = el.value;
+            if (el.id === n) $(s).value = el.value;
+          });
+          recalculate();
+        });
+      });
+      window.addEventListener('resize', recalculate);
+    }
+
+    applyStaticI18n();
+    bindEvents();
+    recalculate();
+  </script>
+</body>
+</html>
