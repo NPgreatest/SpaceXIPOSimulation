@@ -2,6 +2,8 @@
 
 Local day-1 trading sandbox. **No install, no server, no API.**
 
+![SPCX IPO Sandbox screenshot](image.png)
+
 ## Live demo
 
 **[Open simulator →](https://npgreatest.github.io/SpaceXIPOSimulation/)**
